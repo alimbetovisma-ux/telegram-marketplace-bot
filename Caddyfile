@@ -1,0 +1,3 @@
+{$PUBLIC_URL} {
+	reverse_proxy bot-api:8000
+}
