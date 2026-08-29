@@ -57,7 +57,7 @@ async def topup_card(
         amount_uzs=req.amount_uzs,
         card_number=card_number,
         card_holder=card_holder,
-        bot_deeplink=f"https://t.me/{bot_username or 'your_bot'}",
+        bot_deeplink=f"https://t.me/{bot_username or 'your_bot'}?start=topup_{req.id}",
     )
 
 

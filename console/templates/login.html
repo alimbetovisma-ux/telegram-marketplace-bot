@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Вход — Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css">
+<style>
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; font-family:'Inter',-apple-system,Segoe UI,sans-serif; background:radial-gradient(circle at 20% 20%, #efe9ff, #f5f6fa 55%); color:#14151f; }
+  .card { background:#fff; border:1px solid #e5e7f0; border-radius:20px; padding:40px 36px; width:340px; text-align:center; box-shadow:0 20px 60px rgba(20,21,31,.08); }
+  .icon { width:56px; height:56px; margin:0 auto 18px; border-radius:16px; background:linear-gradient(135deg,#6d5bf6,#9b7bff); display:flex; align-items:center; justify-content:center; }
+  .icon i { color:#fff; font-size:28px; }
+  h1 { font-size:19px; margin:0 0 6px; }
+  p { color:#70728a; font-size:13px; margin:0 0 28px; }
+  .g-btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:12px 16px; border-radius:12px; border:1px solid #e5e7f0; background:#fff; font-family:inherit; font-size:14px; font-weight:600; color:#14151f; cursor:pointer; transition:transform .1s ease, box-shadow .15s ease, border-color .15s ease; }
+  .g-btn:hover { transform:translateY(-1px); box-shadow:0 8px 20px rgba(20,21,31,.08); border-color:#d7d9e6; }
+  .g-btn:active { transform:translateY(0) scale(.98); }
+  .g-btn svg { width:18px; height:18px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon"><i class="ti ti-sparkles"></i></div>
+    <h1>Console</h1>
+    <p>Вход только для разрешённых Google-аккаунтов</p>
+    {% if console_enabled %}
+    <a class="g-btn" href="/console/auth/google">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M23.5 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h6.47a5.54 5.54 0 0 1-2.4 3.64v3h3.88c2.27-2.09 3.55-5.17 3.55-8.88z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3a7.42 7.42 0 0 1-11.05-3.9H1.02v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.01 14.19a7.2 7.2 0 0 1 0-4.38V6.72H1.02a12 12 0 0 0 0 10.56z"/><path fill="#EA4335" d="M12 4.77c1.76 0 3.34.6 4.59 1.79l3.44-3.44C17.94 1.19 15.24 0 12 0A12 12 0 0 0 1.02 6.72l3.99 3.09A7.16 7.16 0 0 1 12 4.77z"/></svg>
+      Войти через Google
+    </a>
+    {% else %}
+    <p style="background:#fdf2f2; color:#b3261e; padding:12px 14px; border-radius:10px; font-size:13px; margin:0;">
+      <i class="ti ti-alert-triangle" style="vertical-align:-2px;"></i>
+      Google-вход ещё не настроен. Задайте GOOGLE_CLIENT_ID и GOOGLE_CLIENT_SECRET в .env.
+    </p>
+    {% endif %}
+  </div>
+</body>
+</html>

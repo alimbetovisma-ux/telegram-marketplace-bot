@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.keyboards.main import main_menu_kb
 from bot.locales import LOCALES, t
-from db.models import User
+from bot.states import TopupStates
+from db.models import CardTopupRequest, TxStatus, User
 
 router = Router(name="start")
 
@@ -22,6 +23,16 @@ async def cmd_start(message: Message, user: User, session: AsyncSession, state: 
     await state.clear()
 
     payload = message.text.split(maxsplit=1)[1].strip() if message.text and " " in message.text else ""
+
+    if payload.startswith("topup_"):
+        request_id = payload.removeprefix("topup_")
+        req = await session.get(CardTopupRequest, int(request_id)) if request_id.isdigit() else None
+        if req and req.user_id == user.id and req.status == TxStatus.PENDING and not req.receipt_file_id:
+            await state.set_state(TopupStates.waiting_receipt)
+            await state.update_data(request_id=req.id)
+            await message.answer(t(user.language, "send_receipt"))
+            return
+
     if payload.startswith("ref_") and user.referred_by_id is None:
         code = payload.removeprefix("ref_")
         result = await session.execute(select(User).where(User.referral_code == code))

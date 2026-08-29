@@ -5,6 +5,7 @@ import { t } from "../i18n";
 import { api, ApiError } from "../lib/api";
 import { fmtMoney } from "../lib/format";
 import { TopBar } from "../components/TopBar";
+import { IconBag } from "../components/icons";
 import { hapticError, hapticSuccess } from "../lib/telegram";
 import type { CatalogItem, Order } from "../types";
 
@@ -54,16 +55,16 @@ export function ItemDetailPage({
         <motion.div
           initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="flex h-56 w-full items-center justify-center overflow-hidden rounded-xl2 border border-border bg-surface text-6xl"
+          className="flex h-56 w-full items-center justify-center overflow-hidden rounded-xl2 border border-border bg-surface text-textdim"
         >
-          {item.image_url ? <img src={item.image_url} alt="" className="h-full w-full object-cover" /> : "🛍"}
+          {item.image_url ? <img src={item.image_url} alt="" className="h-full w-full object-cover" /> : <IconBag className="h-16 w-16" />}
         </motion.div>
 
-        <h1 className="mt-4 text-xl font-bold text-text">{item.title}</h1>
+        <h1 className="mt-4 font-display text-xl font-semibold text-text">{item.title}</h1>
         {item.description && <p className="mt-1.5 text-sm leading-relaxed text-textdim">{item.description}</p>}
 
         <div className="mt-4 flex items-center gap-2">
-          <span className="text-2xl font-bold text-accent">{fmtMoney(item.price_uzs)}</span>
+          <span className="tabular-nums font-mono text-2xl font-medium text-accent">{fmtMoney(item.price_uzs)}</span>
           <span className="text-sm text-textdim">
             {t(lang, "som")}
             {isRent ? ` ${t(lang, "per_day")}` : ""}

@@ -8,6 +8,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
 
 import bot.runtime as runtime
 from admin.routes import router as admin_router
@@ -17,6 +18,7 @@ from bot.config import settings
 from bot.handlers import main_router
 from bot.middlewares.auth import AuthMiddleware
 from bot.services import jobs
+from console.routes import router as console_router
 
 logging.basicConfig(level=logging.INFO)
 
@@ -61,12 +63,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Required by authlib's Google OAuth flow (/console) to store the CSRF state between redirects.
+app.add_middleware(SessionMiddleware, secret_key=settings.console_session_secret, same_site="lax")
 
 app.include_router(catalog.router)
 app.include_router(orders.router)
 app.include_router(wallet.router)
 app.include_router(profile.router)
 app.include_router(admin_router)
+app.include_router(console_router)
 
 
 @app.post(settings.webhook_path)

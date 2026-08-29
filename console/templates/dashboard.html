@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% set active = "dashboard" %}
+{% block title %}Дашборд{% endblock %}
+{% block content %}
+<h1>Дашборд</h1>
+<div class="grid">
+  <div class="stat"><div class="num">{{ total_items }}</div><div class="label">Активных товаров</div></div>
+  <div class="stat"><div class="num">{{ total_gifts }}</div><div class="label">NFT-подарков</div></div>
+</div>
+<div class="card">
+  <p style="margin:0 0 12px; color:var(--dim); font-size:14px;">Быстрые действия</p>
+  <a class="btn btn-primary" href="/console/catalog/new"><i class="ti ti-plus"></i>Добавить товар</a>
+  <a class="btn" href="/console/gifts" style="margin-left:8px;"><i class="ti ti-gift"></i>NFT-подарки</a>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% set active = "gifts" %}
+{% block title %}NFT-подарки{% endblock %}
+{% block content %}
+<h1>NFT-подарки</h1>
+
+<div class="card" style="max-width:560px;">
+  <p style="margin:0 0 14px; font-weight:600; font-size:14px;"><i class="ti ti-plus" style="vertical-align:-2px;"></i> Добавить подарок</p>
+  <form method="post" action="/console/gifts/new">
+    <label>Тип</label>
+    <select name="category">
+      <option value="gift_new">Подарок (новый)</option>
+      <option value="gift_old">Подарок (редкий)</option>
+      <option value="rent_nft">Аренда NFT</option>
+    </select>
+
+    <label>Название</label>
+    <input name="title" required placeholder="Plush Pepe">
+
+    <label>Описание</label>
+    <textarea name="description" rows="2"></textarea>
+
+    <label>Цена (so'm)</label>
+    <input name="price_uzs" type="number" step="0.01" required>
+
+    <label>Ссылка на изображение</label>
+    <input name="image_url" placeholder="https://...">
+
+    <button class="btn btn-primary" type="submit"><i class="ti ti-device-floppy"></i>Добавить</button>
+  </form>
+</div>
+
+<div class="card" style="padding:0; overflow-x:auto;">
+  {% if gifts %}
+  <table>
+    <thead><tr><th></th><th>Название</th><th>Тип</th><th>Цена</th><th>Статус</th><th></th></tr></thead>
+    <tbody>
+      {% for g in gifts %}
+      <tr>
+        <td>{% if g.image_url %}<img class="thumb" src="{{ g.image_url }}" alt="">{% else %}<div class="thumb"></div>{% endif %}</td>
+        <td>{{ g.title }}</td>
+        <td>{{ category_labels.get(g.category, g.category) }}</td>
+        <td>{{ "{:,.0f}".format(g.price_uzs).replace(",", " ") }} so'm</td>
+        <td>{% if g.active %}<span class="badge badge-ok"><i class="ti ti-circle-check" style="font-size:12px;"></i>активен</span>{% else %}<span class="badge badge-bad"><i class="ti ti-circle-x" style="font-size:12px;"></i>скрыт</span>{% endif %}</td>
+        <td style="display:flex; gap:6px;">
+          <a class="btn" href="/console/catalog/{{ g.id }}/edit"><i class="ti ti-edit"></i></a>
+          <form class="inline" method="post" action="/console/gifts/{{ g.id }}/toggle-active">
+            <button class="btn" type="submit"><i class="ti {{ 'ti-eye-off' if g.active else 'ti-eye' }}"></i></button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">Пока нет NFT-подарков</div>
+  {% endif %}
+</div>
+{% endblock %}

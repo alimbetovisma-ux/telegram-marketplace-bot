@@ -1,6 +1,7 @@
 from decimal import Decimal, InvalidOperation
 
 from aiogram import Bot, F, Router
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, LabeledPrice, Message
 from sqlalchemy import select
@@ -20,7 +21,7 @@ from bot.locales import t
 from bot.services import create_card_topup_request, create_ton_topup_request, fmt_money, get_setting
 from bot.services import ton_wallet
 from bot.states import TopupStates
-from db.models import CardTopupRequest, Order, TonDirection, Transaction, TxType, User
+from db.models import CardTopupRequest, Order, TonDirection, Transaction, TxStatus, TxType, User
 
 router = Router(name="wallet")
 
@@ -152,21 +153,11 @@ async def on_card_paid(callback: CallbackQuery, user: User, state: FSMContext) -
     await callback.answer()
 
 
-@router.message(TopupStates.waiting_receipt, F.photo)
-async def on_receipt_photo(message: Message, user: User, session: AsyncSession, state: FSMContext, bot: Bot) -> None:
-    lang = user.language
-    data = await state.get_data()
-    request_id = data.get("request_id")
-    req = await session.get(CardTopupRequest, request_id) if request_id else None
-    if req is None:
-        await state.clear()
-        return
-
+async def _attach_receipt(req: CardTopupRequest, message: Message, user: User, session: AsyncSession, bot: Bot) -> None:
     req.receipt_file_id = message.photo[-1].file_id
     await session.commit()
-    await state.clear()
 
-    await message.answer(t(lang, "receipt_saved"))
+    await message.answer(t(user.language, "receipt_saved"))
 
     buyer_name = f"@{user.username}" if user.username else (user.first_name or str(user.tg_id))
     for admin_id in settings.admin_id_list:
@@ -179,6 +170,36 @@ async def on_receipt_photo(message: Message, user: User, session: AsyncSession, 
             )
         except Exception:
             pass
+
+
+@router.message(TopupStates.waiting_receipt, F.photo)
+async def on_receipt_photo(message: Message, user: User, session: AsyncSession, state: FSMContext, bot: Bot) -> None:
+    data = await state.get_data()
+    request_id = data.get("request_id")
+    req = await session.get(CardTopupRequest, request_id) if request_id else None
+    await state.clear()
+    if req is None:
+        return
+    await _attach_receipt(req, message, user, session, bot)
+
+
+@router.message(StateFilter(None), F.photo)
+async def on_receipt_photo_fallback(message: Message, user: User, session: AsyncSession, bot: Bot) -> None:
+    """Catches receipt photos when no FSM state matched (e.g. topup started from the Mini App
+    and the /start deep link with the request id was skipped or lost by the Telegram client)."""
+    result = await session.execute(
+        select(CardTopupRequest)
+        .where(
+            CardTopupRequest.user_id == user.id,
+            CardTopupRequest.status == TxStatus.PENDING,
+            CardTopupRequest.receipt_file_id.is_(None),
+        )
+        .order_by(CardTopupRequest.id.desc())
+    )
+    req = result.scalars().first()
+    if req is None:
+        return
+    await _attach_receipt(req, message, user, session, bot)
 
 
 @router.message(TopupStates.entering_amount_stars)

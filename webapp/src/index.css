@@ -38,3 +38,23 @@ body {
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
+
+.glow-tile {
+  position: relative;
+  isolation: isolate;
+}
+
+.glow-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(circle at 28% 20%, color-mix(in srgb, var(--glow) 40%, transparent), transparent 65%);
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

@@ -40,9 +40,25 @@ class Settings(BaseSettings):
     # Web admin panel session signing key -- set a random string in production.
     admin_session_secret: str = "dev-admin-secret-change-me"
 
+    # Console (separate Google-login admin site at /console).
+    # Create OAuth credentials at https://console.cloud.google.com/apis/credentials
+    # (type: Web application, authorized redirect URI: {PUBLIC_URL}/console/auth/callback).
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    console_admin_emails: str = ""
+    console_session_secret: str = "dev-console-secret-change-me"
+
     @property
     def admin_id_list(self) -> list[int]:
         return [int(x) for x in self.admin_ids.split(",") if x.strip()]
+
+    @property
+    def console_admin_email_list(self) -> list[str]:
+        return [x.strip().lower() for x in self.console_admin_emails.split(",") if x.strip()]
+
+    @property
+    def console_enabled(self) -> bool:
+        return bool(self.google_client_id.strip() and self.google_client_secret.strip())
 
     @property
     def webhook_path(self) -> str:

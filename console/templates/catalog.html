@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% set active = "catalog" %}
+{% block title %}Товары и цены{% endblock %}
+{% block content %}
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+  <h1 style="margin:0;">Товары и цены</h1>
+  <a class="btn btn-primary" href="/console/catalog/new"><i class="ti ti-plus"></i>Добавить товар</a>
+</div>
+<div class="card" style="padding:0; overflow-x:auto;">
+  {% if items %}
+  <table>
+    <thead><tr><th></th><th>Название</th><th>Категория</th><th>Цена</th><th>Статус</th><th></th></tr></thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{% if item.image_url %}<img class="thumb" src="{{ item.image_url }}" alt="">{% else %}<div class="thumb"></div>{% endif %}</td>
+        <td>{{ item.title }}</td>
+        <td>{{ category_labels.get(item.category, item.category) }}</td>
+        <td>{{ "{:,.0f}".format(item.price_uzs).replace(",", " ") }} so'm</td>
+        <td>{% if item.active %}<span class="badge badge-ok"><i class="ti ti-circle-check" style="font-size:12px;"></i>активен</span>{% else %}<span class="badge badge-bad"><i class="ti ti-circle-x" style="font-size:12px;"></i>скрыт</span>{% endif %}</td>
+        <td><a class="btn" href="/console/catalog/{{ item.id }}/edit"><i class="ti ti-edit"></i>Изменить</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">Пока нет товаров</div>
+  {% endif %}
+</div>
+{% endblock %}

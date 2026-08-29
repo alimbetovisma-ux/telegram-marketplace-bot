@@ -18,8 +18,8 @@ export function BalanceCard({ onTopup }: { onTopup?: () => void }) {
       <div className="pointer-events-none absolute -bottom-12 -left-6 h-32 w-32 rounded-full bg-black/10 blur-2xl" />
 
       <div className="relative z-10 text-xs font-semibold tracking-wider text-white/75">{t(lang, "balance_label")}</div>
-      <div className="relative z-10 mt-1 text-3xl font-bold text-white">
-        {fmtMoney(me?.balance ?? 0)} <span className="text-lg font-semibold text-white/80">{t(lang, "som")}</span>
+      <div className="tabular-nums relative z-10 mt-1 font-mono text-3xl font-medium text-white">
+        {fmtMoney(me?.balance ?? 0)} <span className="font-sans text-lg font-semibold text-white/80">{t(lang, "som")}</span>
       </div>
 
       {onTopup && (

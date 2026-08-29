@@ -17,10 +17,13 @@ export default {
       },
       fontFamily: {
         sans: ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "Inter", "sans-serif"],
+        display: ["Sora", "-apple-system", "sans-serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "monospace"],
       },
       boxShadow: {
         glow: "0 8px 32px -8px rgba(77, 158, 255, 0.35)",
         card: "0 1px 0 rgba(255,255,255,0.03) inset, 0 8px 24px -12px rgba(0,0,0,0.5)",
+        tile: "0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 26px -14px rgba(0,0,0,0.6)",
       },
       borderRadius: {
         xl2: "20px",

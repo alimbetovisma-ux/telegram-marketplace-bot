@@ -11,7 +11,7 @@ export function TopBar({ title, onBack }: { title: string; onBack?: () => void }
           <IconBack className="h-5 w-5" />
         </button>
       )}
-      <h1 className="text-lg font-semibold text-text">{title}</h1>
+      <h1 className="font-display text-lg font-semibold text-text">{title}</h1>
     </div>
   );
 }
