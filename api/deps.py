@@ -67,4 +67,7 @@ async def get_current_user(
         session.add(user)
         await session.commit()
         await session.refresh(user)
+
+    if user.is_blocked:
+        raise HTTPException(status_code=403, detail="Account blocked")
     return user

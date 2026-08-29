@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Статистика{% endblock %}
+{% block content %}
+<h1>Статистика</h1>
+
+<div class="card">
+  <b>Выручка за последние 14 дней (сум)</b>
+  <div class="bars">
+    {% for d in revenue_days %}
+    <div class="bar" style="height: {{ d.pct }}%;">
+      <span class="v">{{ d.short }}</span>
+      <span class="d">{{ d.label }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <b>Новые пользователи за последние 14 дней</b>
+  <div class="bars">
+    {% for d in users_days %}
+    <div class="bar" style="height: {{ d.pct }}%; background: linear-gradient(180deg,#3ddc84,#22b563);">
+      <span class="v">{{ d.short }}</span>
+      <span class="d">{{ d.label }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <b>Топ товаров по числу заказов</b>
+  <ul class="toplist">
+    {% for item in top_items %}
+    <li><span>{{ item.title }}</span><span>{{ item.count }} шт · {{ item.revenue }} сум</span></li>
+    {% else %}
+    <li>Пока нет данных.</li>
+    {% endfor %}
+  </ul>
+</div>
+
+<div class="grid">
+  <div class="stat"><div class="num">{{ totals.revenue_30d }}</div><div class="label">Выручка за 30 дней, сум</div></div>
+  <div class="stat"><div class="num">{{ totals.orders_30d }}</div><div class="label">Заказов за 30 дней</div></div>
+  <div class="stat"><div class="num">{{ totals.new_users_30d }}</div><div class="label">Новых пользователей за 30 дней</div></div>
+  <div class="stat"><div class="num">{{ totals.total_balance }}</div><div class="label">Суммарный баланс пользователей, сум</div></div>
+</div>
+{% endblock %}

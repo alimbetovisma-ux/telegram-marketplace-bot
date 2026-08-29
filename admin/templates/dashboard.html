@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Дашборд{% endblock %}
 {% block content %}
-<h1>Дашборд</h1>
+<h1>Дашборд <span class="live-dot" title="Автообновление"></span></h1>
+<div id="live-content">
 <div class="grid">
   <a class="stat" href="/admin/topups"><div class="num">{{ stats.pending_topups }}</div><div class="label">Пополнения на проверке</div></a>
   <a class="stat" href="/admin/orders"><div class="num">{{ stats.pending_orders }}</div><div class="label">Заказы на выдаче</div></a>
@@ -9,9 +10,12 @@
   <a class="stat" href="/admin/deals"><div class="num">{{ stats.disputed_deals }}</div><div class="label">P2P-споры</div></a>
   <a class="stat" href="/admin/catalog"><div class="num">{{ stats.catalog_items }}</div><div class="label">Товаров в каталоге</div></a>
   <a class="stat" href="/admin/assets"><div class="num">{{ stats.available_assets }}</div><div class="label">Свободных активов аренды</div></a>
+  <a class="stat" href="/admin/users"><div class="num">{{ stats.total_users }}</div><div class="label">Всего пользователей</div></a>
 </div>
 <div class="card">
   <b>TON-кошелёк:</b> {{ "включён" if ton_enabled else "не настроен (TON_WALLET_MNEMONIC пуст)" }}<br>
   <b>Fragment:</b> {{ "включён" if fragment_enabled else "не настроен (нужны cookies)" }}
 </div>
+</div>
+<script>startAutoRefresh(10000);</script>
 {% endblock %}

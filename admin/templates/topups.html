@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Пополнения{% endblock %}
 {% block content %}
-<h1>Пополнения картой</h1>
+<h1>Пополнения картой <span class="live-dot"></span></h1>
+<div id="live-content">
 <table>
 <tr><th>#</th><th>Пользователь</th><th>Сумма</th><th>Статус</th><th>Чек</th><th></th></tr>
 {% for r in requests %}
@@ -20,4 +21,6 @@
 </tr>
 {% endfor %}
 </table>
+</div>
+<script>startAutoRefresh(8000);</script>
 {% endblock %}

@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Заказы{% endblock %}
 {% block content %}
-<h1>Заказы</h1>
+<h1>Заказы <span class="live-dot"></span></h1>
+<div id="live-content">
 <table>
 <tr><th>#</th><th>Пользователь</th><th>Товар</th><th>Сумма</th><th>Статус</th><th>Примечание</th><th></th></tr>
 {% for o in orders %}
@@ -20,4 +21,6 @@
 </tr>
 {% endfor %}
 </table>
+</div>
+<script>startAutoRefresh(8000);</script>
 {% endblock %}

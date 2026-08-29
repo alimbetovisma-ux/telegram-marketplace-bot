@@ -2,9 +2,10 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from aiogram import BaseMiddleware
-from aiogram.types import TelegramObject, User as TgUser
+from aiogram.types import CallbackQuery, Message, TelegramObject, User as TgUser
 from sqlalchemy import select
 
+from bot.locales import t
 from db.models import User
 from db.session import SessionLocal
 
@@ -36,6 +37,13 @@ class AuthMiddleware(BaseMiddleware):
                     user.username = tg_user.username
                     user.first_name = tg_user.first_name
                     await session.commit()
+
+            if user is not None and user.is_blocked:
+                if isinstance(event, CallbackQuery):
+                    await event.answer(t(user.language, "user_blocked"), show_alert=True)
+                elif isinstance(event, Message):
+                    await event.answer(t(user.language, "user_blocked"))
+                return None
 
             data["session"] = session
             data["user"] = user

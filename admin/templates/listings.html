@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}P2P-объявления{% endblock %}
 {% block content %}
-<h1>P2P-объявления</h1>
+<h1>P2P-объявления <span class="live-dot"></span></h1>
+<div id="live-content">
 <table>
 <tr><th>#</th><th>Продавец</th><th>Тип</th><th>Название</th><th>Цена</th><th>Статус</th><th></th></tr>
 {% for l in listings %}
@@ -21,4 +22,6 @@
 </tr>
 {% endfor %}
 </table>
+</div>
+<script>startAutoRefresh(8000);</script>
 {% endblock %}

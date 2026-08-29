@@ -147,4 +147,5 @@ STRINGS = {
 
     "language_changed": "✅ Language changed.",
     "unknown_command": "Didn't understand that. Please use the menu 👇",
+    "user_blocked": "⛔️ Your account is blocked. Contact admin if you have questions.",
 }

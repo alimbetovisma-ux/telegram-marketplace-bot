@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Annotated
@@ -7,7 +7,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,6 +29,7 @@ from db.models import (
     P2PDeal,
     RentalAsset,
     RentalAssetStatus,
+    Transaction,
     TxStatus,
     TxType,
     User,
@@ -90,6 +91,7 @@ async def dashboard(request: Request, session: Annotated[AsyncSession, Depends(g
         "disputed_deals": await count(select(P2PDeal.id).where(P2PDeal.status == DealStatus.DISPUTED)),
         "catalog_items": await count(select(CatalogItem.id).where(CatalogItem.active.is_(True))),
         "available_assets": await count(select(RentalAsset.id).where(RentalAsset.status == RentalAssetStatus.AVAILABLE)),
+        "total_users": await count(select(User.id)),
     }
     return templates.TemplateResponse(
         request, "dashboard.html", {"stats": stats, "ton_enabled": settings.ton_enabled, "fragment_enabled": settings.fragment_enabled}
@@ -408,3 +410,221 @@ async def settings_update(
     await set_setting(session, "card_number", card_number.strip())
     await set_setting(session, "card_holder", card_holder.strip())
     return RedirectResponse(url="/admin/settings?ok=1", status_code=303)
+
+
+# ---- users ----
+
+PAGE_SIZE = 50
+
+
+@router.get("/users", response_class=HTMLResponse)
+async def users_page(
+    request: Request,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    _admin: Annotated[int, Depends(require_admin)],
+    q: str = "",
+    page: int = 1,
+):
+    stmt = select(User).order_by(User.id.desc())
+    if q.strip():
+        like = f"%{q.strip()}%"
+        conditions = [User.username.ilike(like), User.first_name.ilike(like)]
+        if q.strip().lstrip("-").isdigit():
+            conditions.append(User.tg_id == int(q.strip()))
+        stmt = stmt.where(or_(*conditions))
+
+    page = max(page, 1)
+    result = await session.execute(stmt.offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE + 1))
+    rows = result.scalars().all()
+    has_next = len(rows) > PAGE_SIZE
+    rows = rows[:PAGE_SIZE]
+
+    users_out = []
+    for u in rows:
+        referred_by_label = None
+        if u.referred_by_id:
+            ref = await session.get(User, u.referred_by_id)
+            referred_by_label = _user_label(ref)
+        users_out.append(
+            {
+                "id": u.id,
+                "tg_id": u.tg_id,
+                "label": _user_label(u),
+                "balance": fmt_money(u.balance),
+                "referred_by_label": referred_by_label,
+                "is_blocked": u.is_blocked,
+                "created_at": u.created_at.strftime("%Y-%m-%d %H:%M"),
+            }
+        )
+
+    return templates.TemplateResponse(request, "users.html", {"users": users_out, "q": q, "page": page, "has_next": has_next})
+
+
+@router.post("/users/{user_id}/adjust")
+async def user_adjust(
+    user_id: int,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    admin_id: Annotated[int, Depends(require_admin)],
+    amount: Annotated[str, Form()] = "",
+    reason: Annotated[str, Form()] = "",
+):
+    user = await session.get(User, user_id)
+    if user and amount.strip():
+        try:
+            delta = Decimal(amount.strip())
+        except InvalidOperation:
+            delta = Decimal("0")
+        if delta != 0:
+            await credit_balance(session, user, delta, TxType.ADMIN_ADJUST, meta={"admin_id": admin_id, "reason": reason.strip()})
+            await session.commit()
+    return RedirectResponse(url="/admin/users?ok=1", status_code=303)
+
+
+@router.post("/users/{user_id}/toggle-block")
+async def user_toggle_block(user_id: int, session: Annotated[AsyncSession, Depends(get_session)], _admin: Annotated[int, Depends(require_admin)]):
+    user = await session.get(User, user_id)
+    if user:
+        user.is_blocked = not user.is_blocked
+        await session.commit()
+    return RedirectResponse(url="/admin/users?ok=1", status_code=303)
+
+
+# ---- transactions ----
+
+
+@router.get("/transactions", response_class=HTMLResponse)
+async def transactions_page(
+    request: Request,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    _admin: Annotated[int, Depends(require_admin)],
+    q: str = "",
+    type: str = "",
+    status: str = "",
+    page: int = 1,
+):
+    stmt = select(Transaction).order_by(Transaction.id.desc())
+    if type:
+        stmt = stmt.where(Transaction.type == type)
+    if status:
+        stmt = stmt.where(Transaction.status == status)
+    if q.strip():
+        like = f"%{q.strip()}%"
+        conditions = [User.username.ilike(like), User.first_name.ilike(like)]
+        if q.strip().lstrip("-").isdigit():
+            conditions.append(User.tg_id == int(q.strip()))
+        match_result = await session.execute(select(User.id).where(or_(*conditions)))
+        matched_ids = [row[0] for row in match_result.all()]
+        stmt = stmt.where(Transaction.user_id.in_(matched_ids or [-1]))
+
+    page = max(page, 1)
+    result = await session.execute(stmt.offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE + 1))
+    rows = result.scalars().all()
+    has_next = len(rows) > PAGE_SIZE
+    rows = rows[:PAGE_SIZE]
+
+    txs_out = []
+    for tx in rows:
+        user = await session.get(User, tx.user_id)
+        txs_out.append(
+            {
+                "id": tx.id,
+                "user_label": _user_label(user, tx.user_id),
+                "type": tx.type,
+                "amount_uzs": fmt_money(tx.amount_uzs),
+                "positive": tx.amount_uzs >= 0,
+                "currency": tx.currency,
+                "status": tx.status,
+                "created_at": tx.created_at.strftime("%Y-%m-%d %H:%M"),
+            }
+        )
+
+    return templates.TemplateResponse(
+        request,
+        "transactions.html",
+        {
+            "txs": txs_out,
+            "q": q,
+            "page": page,
+            "has_next": has_next,
+            "type_filter": type,
+            "status_filter": status,
+            "types": [
+                TxType.TOPUP_CARD,
+                TxType.TOPUP_STARS,
+                TxType.TOPUP_CRYPTO,
+                TxType.SELL_CRYPTO,
+                TxType.PURCHASE,
+                TxType.RENT,
+                TxType.REFERRAL_BONUS,
+                TxType.ADMIN_ADJUST,
+                TxType.REFUND,
+                TxType.P2P_ESCROW,
+                TxType.P2P_RELEASE,
+                TxType.P2P_REFUND,
+            ],
+            "statuses": [TxStatus.PENDING, TxStatus.CONFIRMED, TxStatus.REJECTED],
+        },
+    )
+
+
+# ---- stats ----
+
+
+@router.get("/stats", response_class=HTMLResponse)
+async def stats_page(request: Request, session: Annotated[AsyncSession, Depends(get_session)], _admin: Annotated[int, Depends(require_admin)]):
+    now = datetime.now(timezone.utc)
+    since14 = now - timedelta(days=14)
+    since30 = now - timedelta(days=30)
+
+    revenue_result = await session.execute(
+        select(func.date_trunc("day", Transaction.created_at), func.sum(func.abs(Transaction.amount_uzs)))
+        .where(Transaction.type.in_([TxType.PURCHASE, TxType.RENT]), Transaction.created_at >= since14)
+        .group_by(func.date_trunc("day", Transaction.created_at))
+    )
+    revenue_map = {row[0].date(): float(row[1]) for row in revenue_result.all()}
+
+    users_result = await session.execute(
+        select(func.date_trunc("day", User.created_at), func.count())
+        .where(User.created_at >= since14)
+        .group_by(func.date_trunc("day", User.created_at))
+    )
+    users_map = {row[0].date(): row[1] for row in users_result.all()}
+
+    today = now.date()
+    max_rev = max(revenue_map.values()) if revenue_map else 1
+    max_users = max(users_map.values()) if users_map else 1
+    revenue_days, users_days = [], []
+    for i in range(13, -1, -1):
+        d = today - timedelta(days=i)
+        rev = revenue_map.get(d, 0)
+        cnt = users_map.get(d, 0)
+        revenue_days.append({"label": d.strftime("%d.%m"), "short": fmt_money(rev) if rev else "0", "pct": max(int(rev / max_rev * 100), 2) if max_rev else 2})
+        users_days.append({"label": d.strftime("%d.%m"), "short": str(cnt), "pct": max(int(cnt / max_users * 100), 2) if max_users else 2})
+
+    top_result = await session.execute(
+        select(CatalogItem.title, func.count(Order.id), func.sum(Order.total_uzs))
+        .join(Order, Order.catalog_item_id == CatalogItem.id)
+        .where(Order.status != OrderStatus.CANCELLED)
+        .group_by(CatalogItem.id, CatalogItem.title)
+        .order_by(func.count(Order.id).desc())
+        .limit(5)
+    )
+    top_items = [{"title": row[0], "count": row[1], "revenue": fmt_money(row[2] or 0)} for row in top_result.all()]
+
+    revenue_30d = (await session.execute(
+        select(func.sum(func.abs(Transaction.amount_uzs))).where(Transaction.type.in_([TxType.PURCHASE, TxType.RENT]), Transaction.created_at >= since30)
+    )).scalar_one() or 0
+    orders_30d = (await session.execute(select(func.count(Order.id)).where(Order.created_at >= since30))).scalar_one()
+    new_users_30d = (await session.execute(select(func.count(User.id)).where(User.created_at >= since30))).scalar_one()
+    total_balance = (await session.execute(select(func.sum(User.balance)))).scalar_one() or 0
+
+    totals = {
+        "revenue_30d": fmt_money(revenue_30d),
+        "orders_30d": orders_30d,
+        "new_users_30d": new_users_30d,
+        "total_balance": fmt_money(total_balance),
+    }
+
+    return templates.TemplateResponse(
+        request, "stats.html", {"revenue_days": revenue_days, "users_days": users_days, "top_items": top_items, "totals": totals}
+    )

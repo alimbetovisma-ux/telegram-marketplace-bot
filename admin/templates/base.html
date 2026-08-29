@@ -36,6 +36,18 @@
   .badge-ok { background:rgba(61,220,132,.15); color:var(--success); }
   .badge-bad { background:rgba(255,92,114,.15); color:var(--danger); }
   .flash { background:rgba(61,220,132,.15); color:var(--success); padding:10px 14px; border-radius:8px; margin-bottom:16px; }
+  .live-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--success); margin-left:8px; animation:pulse 1.6s infinite; vertical-align:middle; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.25; } }
+  .bars { display:flex; align-items:flex-end; gap:4px; height:120px; margin-top:10px; }
+  .bars .bar { flex:1; background:linear-gradient(180deg,#4d9eff,#7c5cff); border-radius:4px 4px 0 0; min-height:2px; position:relative; }
+  .bars .bar .v { position:absolute; top:-18px; left:0; right:0; text-align:center; font-size:10px; color:var(--dim); }
+  .bars .bar .d { position:absolute; bottom:-18px; left:0; right:0; text-align:center; font-size:10px; color:var(--dim); }
+  .toplist { list-style:none; margin:10px 0 0; padding:0; }
+  .toplist li { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:14px; }
+  .pager { display:flex; gap:8px; margin-top:14px; }
+  .pager a, .pager span { padding:6px 12px; border-radius:8px; background:var(--surface2); font-size:13px; }
+  .filters { display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+  .filters select, .filters input { width:auto; margin-bottom:0; }
 </style>
 </head>
 <body>
@@ -49,6 +61,9 @@
     <a href="/admin/assets">Активы аренды</a>
     <a href="/admin/listings">P2P-объявления</a>
     <a href="/admin/deals">P2P-споры</a>
+    <a href="/admin/users">Пользователи</a>
+    <a href="/admin/transactions">Транзакции</a>
+    <a href="/admin/stats">Статистика</a>
     <a href="/admin/settings">Настройки</a>
   </nav>
   <main>
@@ -56,5 +71,19 @@
     {% block content %}{% endblock %}
   </main>
 </div>
+<script>
+  function startAutoRefresh(intervalMs) {
+    setInterval(async () => {
+      try {
+        const res = await fetch(window.location.pathname + window.location.search);
+        const html = await res.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const fresh = doc.getElementById('live-content');
+        const current = document.getElementById('live-content');
+        if (fresh && current) current.innerHTML = fresh.innerHTML;
+      } catch (e) { /* network hiccup, ignore */ }
+    }, intervalMs);
+  }
+</script>
 </body>
 </html>

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Транзакции{% endblock %}
+{% block content %}
+<h1>Транзакции <span class="live-dot"></span></h1>
+<form class="filters" method="get" action="/admin/transactions">
+  <input name="q" placeholder="Поиск по пользователю" value="{{ q or '' }}">
+  <select name="type">
+    <option value="">Все типы</option>
+    {% for tp in types %}
+    <option value="{{ tp }}" {{ 'selected' if type_filter == tp else '' }}>{{ tp }}</option>
+    {% endfor %}
+  </select>
+  <select name="status">
+    <option value="">Любой статус</option>
+    {% for st in statuses %}
+    <option value="{{ st }}" {{ 'selected' if status_filter == st else '' }}>{{ st }}</option>
+    {% endfor %}
+  </select>
+  <button class="btn btn-ghost" type="submit">Фильтр</button>
+</form>
+<div id="live-content">
+<table>
+<tr><th>#</th><th>Пользователь</th><th>Тип</th><th>Сумма</th><th>Валюта</th><th>Статус</th><th>Дата</th></tr>
+{% for tx in txs %}
+<tr>
+  <td>{{ tx.id }}</td>
+  <td>{{ tx.user_label }}</td>
+  <td>{{ tx.type }}</td>
+  <td style="color: {{ 'var(--success)' if tx.positive else 'var(--danger)' }};">{{ tx.amount_uzs }}</td>
+  <td>{{ tx.currency }}</td>
+  <td><span class="badge badge-{{ 'ok' if tx.status=='confirmed' else ('bad' if tx.status=='rejected' else 'pending') }}">{{ tx.status }}</span></td>
+  <td style="font-size:12px;color:#8891a5;">{{ tx.created_at }}</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+<div class="pager">
+  {% if page > 1 %}<a href="/admin/transactions?page={{ page - 1 }}&q={{ q or '' }}&type={{ type_filter or '' }}&status={{ status_filter or '' }}">← Назад</a>{% endif %}
+  <span>Стр. {{ page }}</span>
+  {% if has_next %}<a href="/admin/transactions?page={{ page + 1 }}&q={{ q or '' }}&type={{ type_filter or '' }}&status={{ status_filter or '' }}">Вперёд →</a>{% endif %}
+</div>
+<script>startAutoRefresh(10000);</script>
+{% endblock %}

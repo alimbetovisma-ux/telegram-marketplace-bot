@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Пользователи{% endblock %}
+{% block content %}
+<h1>Пользователи</h1>
+<form class="filters" method="get" action="/admin/users">
+  <input name="q" placeholder="Поиск: username, ID, имя" value="{{ q or '' }}" style="min-width:260px;">
+  <button class="btn btn-ghost" type="submit">Найти</button>
+</form>
+<div id="live-content">
+<table>
+<tr><th>#</th><th>Пользователь</th><th>Баланс</th><th>Реф.</th><th>Статус</th><th>Регистрация</th><th></th></tr>
+{% for u in users %}
+<tr>
+  <td>{{ u.id }}</td>
+  <td>{{ u.label }}<br><span style="color:#8891a5;font-size:12px;">ID {{ u.tg_id }}</span></td>
+  <td>{{ u.balance }} сум</td>
+  <td>{{ u.referred_by_label or '—' }}</td>
+  <td><span class="badge badge-{{ 'bad' if u.is_blocked else 'ok' }}">{{ 'заблокирован' if u.is_blocked else 'активен' }}</span></td>
+  <td style="font-size:12px;color:#8891a5;">{{ u.created_at }}</td>
+  <td>
+    <form class="inline" method="post" action="/admin/users/{{ u.id }}/adjust" style="display:flex;gap:4px;align-items:center;">
+      <input name="amount" type="number" placeholder="+/-сум" style="width:100px;margin-bottom:0;">
+      <input name="reason" placeholder="причина" style="width:120px;margin-bottom:0;">
+      <button class="btn btn-ghost" type="submit">✓</button>
+    </form>
+    <form class="inline" method="post" action="/admin/users/{{ u.id }}/toggle-block">
+      <button class="btn {{ 'btn-primary' if u.is_blocked else 'btn-danger' }}" type="submit">{{ 'Разблокировать' if u.is_blocked else 'Заблокировать' }}</button>
+    </form>
+  </td>
+</tr>
+{% endfor %}
+</table>
+</div>
+<div class="pager">
+  {% if page > 1 %}<a href="/admin/users?page={{ page - 1 }}&q={{ q or '' }}">← Назад</a>{% endif %}
+  <span>Стр. {{ page }}</span>
+  {% if has_next %}<a href="/admin/users?page={{ page + 1 }}&q={{ q or '' }}">Вперёд →</a>{% endif %}
+</div>
+{% endblock %}

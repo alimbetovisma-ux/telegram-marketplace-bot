@@ -147,4 +147,5 @@ STRINGS = {
 
     "language_changed": "✅ Til o'zgartirildi.",
     "unknown_command": "Tushunmadim. Menyudan foydalaning 👇",
+    "user_blocked": "⛔️ Sizning hisobingiz bloklangan. Savol bo'lsa, admin bilan bog'laning.",
 }
