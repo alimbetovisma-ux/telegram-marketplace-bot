@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Заказы{% endblock %}
+{% block content %}
+<h1>Заказы</h1>
+<table>
+<tr><th>#</th><th>Пользователь</th><th>Товар</th><th>Сумма</th><th>Статус</th><th>Примечание</th><th></th></tr>
+{% for o in orders %}
+<tr>
+  <td>{{ o.id }}</td>
+  <td>{{ o.user_label }}</td>
+  <td>{{ o.item_title }}</td>
+  <td>{{ o.total_uzs }} сум</td>
+  <td><span class="badge badge-{{ 'ok' if o.status=='fulfilled' else ('bad' if o.status=='cancelled' else 'pending') }}">{{ o.status }}</span></td>
+  <td style="max-width:220px; font-size:12px; color:#8891a5;">{{ o.fulfillment_note or '' }}</td>
+  <td>
+    {% if o.status == 'paid_awaiting_fulfillment' %}
+    <form method="post" action="/admin/orders/{{ o.id }}/fulfill"><button class="btn btn-primary">Отметить выданным</button></form>
+    {% endif %}
+  </td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

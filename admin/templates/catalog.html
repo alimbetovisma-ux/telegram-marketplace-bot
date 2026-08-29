@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Каталог{% endblock %}
+{% block content %}
+<h1>Каталог</h1>
+<p><a class="btn btn-primary" href="/admin/catalog/new">+ Добавить товар</a></p>
+<table>
+<tr><th>#</th><th>Категория</th><th>Название</th><th>Цена</th><th>Остаток</th><th>Активен</th><th></th></tr>
+{% for i in items %}
+<tr>
+  <td>{{ i.id }}</td>
+  <td>{{ i.category }}</td>
+  <td>{{ i.title }}</td>
+  <td>{{ i.price_uzs }} сум</td>
+  <td>{{ i.stock if i.stock is not none else '∞' }}</td>
+  <td><span class="badge badge-{{ 'ok' if i.active else 'bad' }}">{{ 'да' if i.active else 'нет' }}</span></td>
+  <td><a href="/admin/catalog/{{ i.id }}/edit">Изменить</a></td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

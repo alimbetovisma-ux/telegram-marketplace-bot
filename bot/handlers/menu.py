@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.handlers.admin import show_admin_menu
 from bot.handlers.catalog import show_market, show_rent
+from bot.handlers.p2p import show_p2p
 from bot.handlers.profile import show_profile
 from bot.handlers.start import TEXT_TO_MENU_KEY
 from bot.handlers.wallet import show_wallet
@@ -23,6 +24,8 @@ async def on_menu_button(message: Message, user: User, session: AsyncSession, st
         await show_wallet(message, user)
     elif key == "menu_rent":
         await show_rent(message, user)
+    elif key == "menu_p2p":
+        await show_p2p(message, user)
     elif key == "menu_profile":
         await show_profile(message, user)
     elif key == "menu_admin":

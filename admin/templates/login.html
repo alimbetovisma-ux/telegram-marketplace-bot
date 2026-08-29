@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Вход — Admin</title>
+<style>
+  body { margin:0; height:100vh; display:flex; align-items:center; justify-content:center; background:#0b0e14; font-family:-apple-system,Segoe UI,sans-serif; }
+  .box { background:#141824; border:1px solid #262c3d; border-radius:16px; padding:36px; text-align:center; }
+  h1 { color:#f4f6fb; font-size:20px; margin-bottom:24px; }
+  p { color:#8891a5; font-size:13px; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <h1>🛠 Вход в админ-панель</h1>
+    {% if bot_username %}
+    <script async src="https://telegram.org/js/telegram-widget.js?22"
+      data-telegram-login="{{ bot_username }}"
+      data-size="large"
+      data-auth-url="{{ auth_url }}"
+      data-request-access="write"></script>
+    {% else %}
+    <p>Бот не настроен.</p>
+    {% endif %}
+    <p>Доступ только для администраторов бота.</p>
+  </div>
+</body>
+</html>

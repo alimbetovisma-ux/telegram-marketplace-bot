@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Товар{% endblock %}
+{% block content %}
+<h1>{{ 'Изменить товар' if item else 'Новый товар' }}</h1>
+<form method="post" action="{{ '/admin/catalog/' ~ item.id ~ '/edit' if item else '/admin/catalog/new' }}" class="card">
+  <label>Категория</label>
+  <select name="category">
+    {% for c in categories %}
+    <option value="{{ c }}" {{ 'selected' if item and item.category == c else '' }}>{{ c }}</option>
+    {% endfor %}
+  </select>
+
+  <label>Название</label>
+  <input name="title" value="{{ item.title if item else '' }}" required>
+
+  <label>Описание</label>
+  <textarea name="description" rows="3">{{ item.description if item else '' }}</textarea>
+
+  <label>Цена (сум)</label>
+  <input name="price_uzs" type="number" step="1" value="{{ item.price_uzs if item else '' }}" required>
+
+  <label>Скидка (%)</label>
+  <input name="discount_percent" type="number" value="{{ item.discount_percent if item else 0 }}">
+
+  <label>Остаток (пусто = неограничено)</label>
+  <input name="stock" type="number" value="{{ item.stock if item and item.stock is not none else '' }}">
+
+  <label>URL картинки (или file_id из Telegram)</label>
+  <input name="image_url" value="{{ item.image_url if item else '' }}">
+
+  <label>Теги (через запятую)</label>
+  <input name="tags" value="{{ (item.tags | join(', ')) if item and item.tags else '' }}">
+
+  <label>duration_options (JSON) — {"months": 3} для Premium, {"stars": 500} для Stars, {"days": 30} для аренды</label>
+  <input name="duration_options" value='{{ (item.duration_options | tojson) if item and item.duration_options else "" }}'>
+
+  <label><input type="checkbox" name="active" style="width:auto;display:inline-block;" {{ 'checked' if not item or item.active else '' }}> Активен</label>
+
+  <button class="btn btn-primary" type="submit">Сохранить</button>
+</form>
+{% endblock %}

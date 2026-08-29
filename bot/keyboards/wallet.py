@@ -1,5 +1,6 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
+from bot.config import settings
 from bot.locales import t
 
 
@@ -16,10 +17,36 @@ def wallet_kb(lang: str) -> InlineKeyboardMarkup:
 
 
 def topup_method_kb(lang: str) -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton(text=t(lang, "btn_topup_card"), callback_data="topup:method:card")],
+        [InlineKeyboardButton(text=t(lang, "btn_topup_stars"), callback_data="topup:method:stars")],
+    ]
+    if settings.ton_enabled:
+        rows.append([InlineKeyboardButton(text=t(lang, "btn_topup_crypto"), callback_data="topup:method:crypto")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def crypto_currency_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=t(lang, "btn_topup_card"), callback_data="topup:method:card")],
-            [InlineKeyboardButton(text=t(lang, "btn_topup_stars"), callback_data="topup:method:stars")],
+            [
+                InlineKeyboardButton(text="TON", callback_data="topup:crypto:cur:TON"),
+                InlineKeyboardButton(text="USDT", callback_data="topup:crypto:cur:USDT"),
+            ]
+        ]
+    )
+
+
+def crypto_direction_kb(lang: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=t(lang, "btn_crypto_topup"), callback_data="topup:crypto:dir:topup")],
+            [
+                InlineKeyboardButton(
+                    text=t(lang, "btn_crypto_sell", percent=settings.p2p_commission_percent),
+                    callback_data="topup:crypto:dir:sell",
+                )
+            ],
         ]
     )
 

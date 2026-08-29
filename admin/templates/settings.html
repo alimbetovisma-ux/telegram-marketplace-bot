@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Настройки{% endblock %}
+{% block content %}
+<h1>Настройки</h1>
+
+<form method="post" action="/admin/settings" class="card">
+  <label>Номер карты (для ручного пополнения)</label>
+  <input name="card_number" value="{{ card_number }}">
+  <label>Владелец карты</label>
+  <input name="card_holder" value="{{ card_holder }}">
+  <button class="btn btn-primary" type="submit">Сохранить</button>
+</form>
+
+<div class="card">
+  <b>Настройки ниже задаются только через .env на сервере (не отсюда, для безопасности):</b>
+  <table style="margin-top:10px;">
+    <tr><td>TON-кошелёк</td><td>{{ 'настроен' if ton_enabled else 'НЕ настроен' }}</td></tr>
+    <tr><td>Fragment</td><td>{{ 'настроен' if fragment_enabled else 'НЕ настроен' }}</td></tr>
+    <tr><td>Курс TON → сум</td><td>{{ ton_rate }}</td></tr>
+    <tr><td>Курс USDT → сум</td><td>{{ usdt_rate }}</td></tr>
+    <tr><td>Комиссия P2P</td><td>{{ p2p_commission }}%</td></tr>
+    <tr><td>Курс Stars → сум</td><td>{{ stars_rate }}</td></tr>
+    <tr><td>Реферальный бонус</td><td>{{ referral_percent }}%</td></tr>
+  </table>
+</div>
+{% endblock %}

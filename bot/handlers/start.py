@@ -13,7 +13,7 @@ router = Router(name="start")
 
 TEXT_TO_MENU_KEY: dict[str, str] = {}
 for _lang_dict in LOCALES.values():
-    for _key in ("menu_market", "menu_wallet", "menu_rent", "menu_profile", "menu_admin"):
+    for _key in ("menu_market", "menu_wallet", "menu_rent", "menu_p2p", "menu_profile", "menu_admin"):
         TEXT_TO_MENU_KEY[_lang_dict[_key]] = _key
 
 

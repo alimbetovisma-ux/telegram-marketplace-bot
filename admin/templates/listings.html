@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}P2P-объявления{% endblock %}
+{% block content %}
+<h1>P2P-объявления</h1>
+<table>
+<tr><th>#</th><th>Продавец</th><th>Тип</th><th>Название</th><th>Цена</th><th>Статус</th><th></th></tr>
+{% for l in listings %}
+<tr>
+  <td>{{ l.id }}</td>
+  <td>{{ l.seller_label }}</td>
+  <td>{{ l.type }}</td>
+  <td>{{ l.title }}</td>
+  <td>{{ l.price_uzs }} сум</td>
+  <td><span class="badge badge-{{ 'ok' if l.status=='active' or l.status=='sold' else ('bad' if l.status=='rejected' else 'pending') }}">{{ l.status }}</span></td>
+  <td>
+    {% if l.status == 'pending_review' %}
+    <form class="inline" method="post" action="/admin/listings/{{ l.id }}/approve"><button class="btn btn-primary">✅</button></form>
+    <form class="inline" method="post" action="/admin/listings/{{ l.id }}/reject"><button class="btn btn-danger">❌</button></form>
+    {% endif %}
+  </td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

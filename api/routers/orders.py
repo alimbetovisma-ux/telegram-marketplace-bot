@@ -12,6 +12,7 @@ from bot.bot_instance import bot
 from bot.config import settings
 from bot.locales import t
 from bot.services import InsufficientBalance, ItemUnavailable, fmt_money, purchase_item
+from bot.services import fulfillment
 from db.models import CatalogItem, Order, User
 from db.session import get_session
 
@@ -56,7 +57,7 @@ async def create_order(
         raise HTTPException(status_code=404, detail="Item not found")
 
     try:
-        order, bonus_info = await purchase_item(session, user, item)
+        order, bonus_info = await purchase_item(session, user, item, target_username=user.username)
     except ItemUnavailable:
         raise HTTPException(status_code=409, detail="Item unavailable")
     except InsufficientBalance:
@@ -66,15 +67,17 @@ async def create_order(
     await session.refresh(order)
     order.item = item
 
-    buyer_name = f"@{user.username}" if user.username else (user.first_name or str(user.tg_id))
-    for admin_id in settings.admin_id_list:
-        try:
-            await bot.send_message(
-                admin_id,
-                t("ru", "admin_new_order_notify", user=buyer_name, title=item.title, total=fmt_money(order.total_uzs), order_id=order.id),
-            )
-        except Exception:
-            pass
+    auto_fulfilled = await fulfillment.try_auto_fulfill(session, order, item, user)
+    if not auto_fulfilled:
+        buyer_name = f"@{user.username}" if user.username else (user.first_name or str(user.tg_id))
+        for admin_id in settings.admin_id_list:
+            try:
+                await bot.send_message(
+                    admin_id,
+                    t("ru", "admin_new_order_notify", user=buyer_name, title=item.title, total=fmt_money(order.total_uzs), order_id=order.id),
+                )
+            except Exception:
+                pass
     if bonus_info:
         referrer, bonus = bonus_info
         try:

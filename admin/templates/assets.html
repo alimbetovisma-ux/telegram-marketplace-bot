@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Активы аренды{% endblock %}
+{% block content %}
+<h1>Активы аренды</h1>
+
+<div class="card">
+  <form method="post" action="/admin/assets/new">
+    <label>Товар (категория аренды)</label>
+    <select name="catalog_item_id">
+      {% for i in rental_items %}
+      <option value="{{ i.id }}">{{ i.category }} — {{ i.title }}</option>
+      {% endfor %}
+    </select>
+    <label>Данные доступа (логин/пароль, сессия, инструкция)</label>
+    <textarea name="access_payload" rows="3" required></textarea>
+    <button class="btn btn-primary" type="submit">Добавить актив</button>
+  </form>
+</div>
+
+<table>
+<tr><th>#</th><th>Товар</th><th>Статус</th><th>До</th><th>Заказ</th></tr>
+{% for a in assets %}
+<tr>
+  <td>{{ a.id }}</td>
+  <td>{{ a.item_title }}</td>
+  <td><span class="badge badge-{{ 'ok' if a.status=='available' else ('bad' if a.status=='retired' else 'pending') }}">{{ a.status }}</span></td>
+  <td>{{ a.rented_until or '—' }}</td>
+  <td>{{ a.current_order_id or '—' }}</td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

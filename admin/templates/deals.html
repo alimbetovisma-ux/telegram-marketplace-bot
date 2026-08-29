@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}P2P-сделки{% endblock %}
+{% block content %}
+<h1>P2P-сделки и споры</h1>
+<table>
+<tr><th>#</th><th>Товар</th><th>Покупатель</th><th>Продавец</th><th>Сумма</th><th>Статус</th><th>Причина спора</th><th></th></tr>
+{% for d in deals %}
+<tr>
+  <td>{{ d.id }}</td>
+  <td>{{ d.title }}</td>
+  <td>{{ d.buyer_label }}</td>
+  <td>{{ d.seller_label }}</td>
+  <td>{{ d.escrow_uzs }} сум</td>
+  <td><span class="badge badge-{{ 'ok' if d.status=='completed' else ('bad' if d.status=='disputed' else 'pending') }}">{{ d.status }}</span></td>
+  <td style="max-width:200px;font-size:12px;color:#8891a5;">{{ d.admin_note or '' }}</td>
+  <td>
+    {% if d.status == 'disputed' %}
+    <form class="inline" method="post" action="/admin/deals/{{ d.id }}/release"><button class="btn btn-primary">→ Продавцу</button></form>
+    <form class="inline" method="post" action="/admin/deals/{{ d.id }}/refund"><button class="btn btn-danger">→ Покупателю</button></form>
+    {% endif %}
+  </td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

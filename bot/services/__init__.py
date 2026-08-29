@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
-from db.models import CardTopupRequest, CatalogItem, Category, Order, Setting, Transaction, TxStatus, TxType, User
+from db.models import CardTopupRequest, CatalogItem, Category, Order, Setting, TonTopupRequest, Transaction, TxStatus, TxType, User
 
 
 class InsufficientBalance(Exception):
@@ -73,11 +73,14 @@ async def apply_referral_bonus(session: AsyncSession, buyer: User, purchase_amou
     return referrer, bonus
 
 
-async def purchase_item(session: AsyncSession, user: User, item: CatalogItem) -> tuple[Order, tuple[User, Decimal] | None]:
+async def purchase_item(
+    session: AsyncSession, user: User, item: CatalogItem, target_username: str | None = None
+) -> tuple[Order, tuple[User, Decimal] | None]:
     """Debit the buyer, create the order, and apply any referral bonus.
 
     Raises ItemUnavailable / InsufficientBalance instead of touching the DB
-    when the purchase can't go through. Caller commits.
+    when the purchase can't go through. Caller commits, then should call
+    bot.services.fulfillment.try_auto_fulfill() for the committed order.
     """
     if not item.active or (item.stock is not None and item.stock <= 0):
         raise ItemUnavailable()
@@ -85,7 +88,7 @@ async def purchase_item(session: AsyncSession, user: User, item: CatalogItem) ->
         raise InsufficientBalance()
 
     price = item.price_uzs
-    order = Order(user_id=user.id, catalog_item_id=item.id, qty=1, total_uzs=price)
+    order = Order(user_id=user.id, catalog_item_id=item.id, qty=1, total_uzs=price, target_username=target_username)
     session.add(order)
 
     tx_type = TxType.RENT if item.category in Category.RENTAL else TxType.PURCHASE
@@ -106,4 +109,13 @@ async def create_card_topup_request(session: AsyncSession, user: User, amount_uz
     await session.flush()
     req = CardTopupRequest(user_id=user.id, transaction_id=tx.id, amount_uzs=amount_uzs, status=TxStatus.PENDING)
     session.add(req)
+    return req
+
+
+async def create_ton_topup_request(
+    session: AsyncSession, user: User, currency: str, amount: Decimal, direction: str = "topup"
+) -> TonTopupRequest:
+    req = TonTopupRequest(user_id=user.id, direction=direction, currency=currency, expected_amount=amount)
+    session.add(req)
+    await session.flush()
     return req

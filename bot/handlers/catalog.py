@@ -13,6 +13,7 @@ from bot.keyboards.catalog import (
 )
 from bot.locales import t
 from bot.services import fmt_money, purchase_item
+from bot.services import fulfillment
 from db.models import CatalogItem, User
 
 router = Router(name="catalog")
@@ -79,7 +80,7 @@ async def on_buy(callback: CallbackQuery, user: User, session: AsyncSession, bot
         await callback.answer(t(lang, "insufficient_balance", price=fmt_money(price), balance=fmt_money(user.balance)), show_alert=True)
         return
 
-    order, bonus_info = await purchase_item(session, user, item)
+    order, bonus_info = await purchase_item(session, user, item, target_username=user.username)
     await session.commit()
     await session.refresh(order)
 
@@ -93,15 +94,17 @@ async def on_buy(callback: CallbackQuery, user: User, session: AsyncSession, bot
         except Exception:
             pass
 
-    buyer_name = f"@{user.username}" if user.username else (user.first_name or str(user.tg_id))
-    for admin_id in settings.admin_id_list:
-        try:
-            await bot.send_message(
-                admin_id,
-                t("ru", "admin_new_order_notify", user=buyer_name, title=item.title, total=fmt_money(price), order_id=order.id),
-            )
-        except Exception:
-            pass
+    auto_fulfilled = await fulfillment.try_auto_fulfill(session, order, item, user)
+    if not auto_fulfilled:
+        buyer_name = f"@{user.username}" if user.username else (user.first_name or str(user.tg_id))
+        for admin_id in settings.admin_id_list:
+            try:
+                await bot.send_message(
+                    admin_id,
+                    t("ru", "admin_new_order_notify", user=buyer_name, title=item.title, total=fmt_money(price), order_id=order.id),
+                )
+            except Exception:
+                pass
 
 
 @router.callback_query(F.data == "back:main")

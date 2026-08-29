@@ -8,11 +8,19 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
-from bot.keyboards.wallet import admin_topup_review_kb, i_paid_kb, topup_method_kb, wallet_kb
+from bot.keyboards.wallet import (
+    admin_topup_review_kb,
+    crypto_currency_kb,
+    crypto_direction_kb,
+    i_paid_kb,
+    topup_method_kb,
+    wallet_kb,
+)
 from bot.locales import t
-from bot.services import create_card_topup_request, fmt_money, get_setting
+from bot.services import create_card_topup_request, create_ton_topup_request, fmt_money, get_setting
+from bot.services import ton_wallet
 from bot.states import TopupStates
-from db.models import CardTopupRequest, Order, Transaction, TxType, User
+from db.models import CardTopupRequest, Order, TonDirection, Transaction, TxType, User
 
 router = Router(name="wallet")
 
@@ -40,6 +48,64 @@ async def on_topup_card(callback: CallbackQuery, user: User, state: FSMContext) 
 async def on_topup_stars(callback: CallbackQuery, user: User, state: FSMContext) -> None:
     await state.set_state(TopupStates.entering_amount_stars)
     await callback.message.edit_text(t(user.language, "enter_amount"))
+    await callback.answer()
+
+
+@router.callback_query(F.data == "topup:method:crypto")
+async def on_topup_crypto(callback: CallbackQuery, user: User) -> None:
+    if not settings.ton_enabled:
+        await callback.answer(t(user.language, "topup_crypto_disabled"), show_alert=True)
+        return
+    await callback.message.edit_text(t(user.language, "topup_crypto_choose_currency"), reply_markup=crypto_currency_kb())
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("topup:crypto:cur:"))
+async def on_topup_crypto_currency(callback: CallbackQuery, user: User, state: FSMContext) -> None:
+    currency = callback.data.removeprefix("topup:crypto:cur:")
+    await state.update_data(crypto_currency=currency)
+    await state.set_state(TopupStates.entering_amount_crypto)
+    await callback.message.edit_text(t(user.language, "topup_crypto_enter_amount", currency=currency))
+    await callback.answer()
+
+
+@router.message(TopupStates.entering_amount_crypto)
+async def on_amount_crypto(message: Message, user: User, state: FSMContext) -> None:
+    lang = user.language
+    amount = _parse_amount(message.text or "")
+    if amount is None:
+        await message.answer(t(lang, "invalid_amount"))
+        return
+    await state.update_data(crypto_amount=str(amount))
+    await message.answer(t(lang, "topup_crypto_choose_direction"), reply_markup=crypto_direction_kb(lang))
+
+
+@router.callback_query(F.data.startswith("topup:crypto:dir:"))
+async def on_topup_crypto_direction(callback: CallbackQuery, user: User, session: AsyncSession, state: FSMContext) -> None:
+    lang = user.language
+    direction = callback.data.removeprefix("topup:crypto:dir:")
+    data = await state.get_data()
+    currency = data.get("crypto_currency")
+    amount_str = data.get("crypto_amount")
+    if not currency or not amount_str:
+        await callback.answer()
+        return
+
+    amount = Decimal(amount_str)
+    req = await create_ton_topup_request(
+        session, user, currency, amount, direction=TonDirection.SELL if direction == "sell" else TonDirection.TOPUP
+    )
+    await session.commit()
+    await state.clear()
+
+    try:
+        address = await ton_wallet.get_wallet_address()
+    except Exception:
+        address = "—"
+
+    await callback.message.edit_text(
+        t(lang, "topup_crypto_instructions", amount=amount, currency=currency, address=address, memo=req.memo)
+    )
     await callback.answer()
 
 
@@ -151,7 +217,20 @@ async def on_history(callback: CallbackQuery, user: User, session: AsyncSession)
         await callback.answer()
         return
 
-    icons = {TxType.TOPUP_CARD: "💳", TxType.TOPUP_STARS: "⭐️", TxType.PURCHASE: "🛒", TxType.RENT: "🔑", TxType.REFERRAL_BONUS: "🎁", TxType.ADMIN_ADJUST: "⚙️", TxType.REFUND: "↩️"}
+    icons = {
+        TxType.TOPUP_CARD: "💳",
+        TxType.TOPUP_STARS: "⭐️",
+        TxType.TOPUP_CRYPTO: "💠",
+        TxType.SELL_CRYPTO: "💠",
+        TxType.PURCHASE: "🛒",
+        TxType.RENT: "🔑",
+        TxType.REFERRAL_BONUS: "🎁",
+        TxType.ADMIN_ADJUST: "⚙️",
+        TxType.REFUND: "↩️",
+        TxType.P2P_ESCROW: "🤝",
+        TxType.P2P_RELEASE: "🤝",
+        TxType.P2P_REFUND: "↩️",
+    }
     lines = [
         t(lang, "history_item", icon=icons.get(tx.type, "•"), type=tx.type, amount=fmt_money(tx.amount_uzs), status=tx.status, date=tx.created_at.strftime("%Y-%m-%d %H:%M"))
         for tx in txs
